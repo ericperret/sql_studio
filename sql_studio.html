@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>SQL Studio</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Courier New',monospace;background:#070d14;color:#9ab8c8;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+#hdr{background:#030810;border-bottom:1px solid #0d3040;padding:8px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo{color:#00e5ff;font-size:15px;letter-spacing:3px;font-weight:bold}
+#stats{color:#2a6a7a;font-size:11px;flex:1}
+button{font-family:'Courier New',monospace;cursor:pointer;border-radius:2px}
+.bsm{font-size:11px;padding:4px 10px;background:transparent;border:1px solid #1a4a5a;color:#4a8a9a}
+.bsm:hover{border-color:#4a8a9a;color:#80c0d0}
+.bdng{font-size:11px;padding:4px 10px;background:transparent;border:1px solid #4a1a1a;color:#8a4a4a}
+.bdng:hover{border-color:#8a5a5a;color:#ef9a9a}
+#main{flex:1;display:grid;grid-template-columns:270px 1fr;overflow:hidden}
+/* LEFT */
+#left{background:#060c14;border-right:1px solid #0d3040;display:flex;flex-direction:column;overflow:hidden}
+#left-hdr{padding:7px 10px;border-bottom:1px solid #0d2535;display:flex;align-items:center;gap:6px;flex-shrink:0}
+#left-hdr span{font-size:10px;letter-spacing:2px;color:#1a6a7a;flex:1}
+#tables{flex:1;overflow-y:auto;padding:5px}
+.ti{margin-bottom:3px;border:1px solid #0d2535;border-radius:2px;overflow:hidden}
+.th2{display:flex;align-items:center;padding:5px 8px;background:#07111b;cursor:pointer;gap:5px}
+.th2:hover{background:#0a1828}
+.tarr{color:#2a5a6a;font-size:9px;transition:transform .15s}
+.tarr.op{transform:rotate(90deg)}
+.tnm{color:#00bcd4;font-size:12px;flex:1}
+.tcnt{color:#2a5a6a;font-size:10px}
+.tb{display:none;padding:6px;background:#050d16}
+.tb.op{display:block}
+.cr{display:flex;gap:6px;font-size:11px;padding:1px 3px}
+.cn{color:#70a8b8;flex:1}.ctp{color:#1a6a5a;font-size:10px}
+.tdata{overflow-x:auto;margin:5px 0}
+.tdata table{border-collapse:collapse;font-size:10px;white-space:nowrap}
+.tdata th{color:#2a8a9a;padding:2px 6px;border-bottom:1px solid #0d2535;text-align:left}
+.tdata td{color:#5a9aaa;padding:1px 6px}
+.tacts{display:flex;gap:4px;margin-top:4px}
+.tacts button{font-size:10px;padding:3px 0;flex:1;font-family:'Courier New',monospace}
+/* RIGHT */
+#right{display:flex;flex-direction:column;overflow:hidden}
+#kw-zone{padding:7px 12px;border-bottom:1px solid #0d2535;background:#060c14;flex-shrink:0}
+#kws{display:flex;flex-wrap:wrap;gap:3px;align-items:center}
+.ks{color:#1a3a4a;font-size:10px;padding:0 3px}
+.kb{font-size:10px;padding:2px 8px;border-radius:10px;border:1px solid;transition:all .1s}
+.kr{border-color:#0d4a5a;color:#4a9aaa;background:#040e18}.kr:hover{background:#0a2a38;color:#80d0e0}
+.kj{border-color:#2a3a0d;color:#6a9a3a;background:#060f08}.kj:hover{background:#0a1e10;color:#a0c870}
+.kc{border-color:#3a2a0d;color:#9a7a3a;background:#100e06}.kc:hover{background:#1e1a0a;color:#c8b070}
+.kw{border-color:#3a0d2a;color:#9a4a7a;background:#100614}.kw:hover{background:#1e0a18;color:#c870a0}
+.kd{border-color:#2a0d3a;color:#7a4a9a;background:#0e0618}.kd:hover{background:#180a1e;color:#a070c8}
+#ed-zone{padding:10px 12px;border-bottom:1px solid #0d2535;flex-shrink:0}
+textarea{width:100%;height:108px;background:#030a12;border:1px solid #0d3040;color:#00e5ff;font-family:'Courier New',monospace;font-size:13px;line-height:1.6;padding:10px;resize:none;outline:none;border-radius:2px;tab-size:2}
+textarea:focus{border-color:#00bcd4}
+#br{display:flex;gap:6px;margin-top:7px;align-items:center}
+.bx{background:#092838;border:1px solid #00bcd4;color:#00e5ff;font-size:12px;padding:5px 16px;letter-spacing:1px}
+.bx:hover{background:#133848}
+.bc{background:transparent;border:1px solid #1a3a4a;color:#3a6a7a;font-size:12px;padding:5px 10px}
+.bc:hover{color:#70a0b0}
+#sk{font-size:10px;color:#1a3a4a;margin-left:auto}
+#res-zone{flex:1;overflow-y:auto;padding:12px}
+#rh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+#rh span{font-size:10px;letter-spacing:2px;color:#1a6a7a;flex:1}
+#rcnt{font-size:11px;color:#2a6a7a}
+#rexp{font-size:10px;padding:3px 8px;background:transparent;border:1px solid #1a4a2a;color:#4a8a5a}
+#rexp:hover{border-color:#4a8a5a;color:#80c090}
+#out{font-size:12px}
+.empty{color:#1a3a4a}
+table.res{border-collapse:collapse;font-size:12px;margin-bottom:10px}
+table.res th{background:#07141e;color:#2a9aaa;padding:5px 12px;border:1px solid #0d2535;text-align:left;font-size:11px;letter-spacing:1px}
+table.res td{padding:4px 12px;border:1px solid #0a1a25;color:#80b8c8}
+table.res tr:nth-child(even) td{background:#050e16}
+.nval{color:#1a3a4a;font-style:italic}
+.mok{padding:8px 12px;border-radius:2px;background:#041408;border:1px solid #00c853;color:#69f0ae;font-size:12px}
+.merr{padding:8px 12px;border-radius:2px;background:#140408;border:1px solid #b52020;color:#ef9a9a;font-size:12px}
+.minf{padding:8px 12px;border-radius:2px;background:#040e18;border:1px solid #1a5a7a;color:#5a9aaa;font-size:12px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#030810}
+::-webkit-scrollbar-thumb{background:#0d3040;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#1a5060}
+/* training */
+.btr{font-size:11px;padding:4px 10px;background:transparent;border:1px solid #3a2a0d;color:#9a7a3a}
+.btr:hover{border-color:#c8a050;color:#c8a050}
+.btr.on{background:#1e1500;border-color:#ffd740;color:#ffd740}
+#qz{padding:8px 12px;border-bottom:1px solid #2a1a00;background:#080900;flex-shrink:0;display:none}
+#qnav{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+#qnav button{font-size:11px;padding:2px 8px;background:transparent;border:1px solid #2a3a0d;color:#6a7a3a}
+#qnav button:hover{border-color:#8a9a5a;color:#a0b070}
+#qlvl{font-size:10px;letter-spacing:2px;color:#7a6a2a;flex:1;text-align:center}
+#qdots{display:flex;gap:3px;align-items:center}
+.qd{width:7px;height:7px;border-radius:50%;background:#1a2a1a;border:1px solid #2a3a2a}
+.qd.done{background:#00c853;border-color:#00c853}
+.qd.cur{background:#ffd740;border-color:#ffd740}
+.qd.err{background:#3a2a0a;border-color:#6a5a1a}
+#qtxt{font-size:12px;color:#a0a070;line-height:1.7;margin-bottom:4px}
+#qtxt b{color:#ffd740}
+#qerr{font-size:10px;color:#5a4a2a;margin-bottom:3px}
+#qhint{font-size:11px;color:#6a9a6a;background:#050e05;border:1px solid #1a4a1a;border-left:2px solid #4a8a4a;padding:5px 8px;margin-top:4px;display:none}
+#qsol{font-size:11px;color:#6a7a9a;background:#05060e;border:1px solid #1a2a4a;border-left:2px solid #4a5a8a;padding:5px 8px;margin-top:4px;display:none;white-space:pre}
+#qcours{background:#05080f;border:1px solid #1a3a5a;border-left:2px solid #00bcd4;padding:8px 12px;margin-bottom:6px;font-size:11px;line-height:1.8;color:#7aaabb}
+#qcours b{color:#00e5ff}#qcours code{color:#80d0b0;background:#030810;padding:0 3px;border-radius:2px}
+#qcours .ex{color:#5a8a6a;margin-top:4px;white-space:pre;font-size:10px}background:#041508;border:1px solid #00c853;color:#69f0ae;font-size:12px;border-radius:2px;margin-bottom:6px}
+.vko{display:inline-block;padding:5px 12px;background:#150408;border:1px solid #b52020;color:#ef9a9a;font-size:12px;border-radius:2px;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div id="hdr">
+  <div class="logo">◈ SQL STUDIO</div>
+  <div id="stats"></div>
+  <button class="bsm" onclick="loadDemo()">⬇ démo</button>
+  <button class="btr" id="btntr" onclick="toggleTraining()">▷ training</button>
+  <button class="bsm" onclick="document.getElementById('csvIn').click()">↑ CSV</button>
+  <button class="bdng" onclick="clearAll()">✕ reset</button>
+  <input type="file" id="csvIn" accept=".csv" style="display:none" onchange="handleCSV(this)">
+</div>
+<div id="main">
+  <div id="left">
+    <div id="left-hdr"><span>TABLES</span></div>
+    <div id="tables"></div>
+  </div>
+  <div id="right">
+    <div id="kw-zone"><div id="kws"></div></div>
+    <div id="qz">
+      <div id="qnav">
+        <button onclick="prevQ()">◀</button>
+        <span id="qlvl"></span>
+        <div id="qdots"></div>
+        <button onclick="showCours()">💡</button>
+        <button onclick="nextQ()">▶</button>
+      </div>
+      <div id="qcours" style="display:none"></div>
+      <div id="qtxt"></div>
+      <div id="qerr"></div>
+      <div id="qhint"></div>
+      <div id="qsol"></div>
+    </div>
+    <div id="ed-zone">
+      <textarea id="sql" placeholder="SELECT * FROM ...&#10;INSERT INTO ...&#10;CREATE TABLE ..."></textarea>
+      <div id="br">
+        <button class="bx" onclick="run()">▶ EXÉCUTER</button>
+        <button class="bc" onclick="document.getElementById('sql').value=''">↺</button>
+        <span id="sk">Ctrl+Enter</span>
+      </div>
+    </div>
+    <div id="res-zone">
+      <div id="rh">
+        <span>RÉSULTATS</span>
+        <span id="rcnt"></span>
+        <button id="rexp" onclick="exportCSV()" style="display:none">↓ CSV</button>
+      </div>
+      <div id="out" class="empty">En attente...</div>
+    </div>
+  </div>
+</div>
+<script>
+// ═══ DB ══════════════════════════════════════════════════
+// DB[table] = { cols:[{name,type}], rows:[{...}] }
+let DB = {};
+
+const DEMO = {
+  base:{
+    cols:[{name:'id',type:'INTEGER'},{name:'name',type:'TEXT'},{name:'level_security',type:'INTEGER'},{name:'planet',type:'TEXT'},{name:'responsable_id',type:'INTEGER'}],
+    rows:[
+      {id:1,name:"Scaraf",level_security:10,planet:"Scaraf",responsable_id:3},
+      {id:2,name:"Mastifir",level_security:8,planet:"Yavon",responsable_id:1},
+      {id:3,name:"Stars_base",level_security:12,planet:"Ilom",responsable_id:2},
+      {id:4,name:"Imperial_center",level_security:5,planet:"Coriscant",responsable_id:4}
+    ]
+  },
+  officer:{
+    cols:[{name:'id',type:'INTEGER'},{name:'name',type:'TEXT'},{name:'rank',type:'TEXT'},{name:'access_code',type:'TEXT'}],
+    rows:[
+      {id:1,name:"Hitti",rank:"Amiral",access_code:"HITT-753"},
+      {id:2,name:"Hox",rank:"General",access_code:"HOX-442"},
+      {id:3,name:"Krinnec",rank:"Director",access_code:"KRIN-19"},
+      {id:4,name:"Versa",rank:"Captain",access_code:"VERS-33"},
+      {id:5,name:"Ockboor",rank:"Amiral",access_code:"REB-OCK"}
+    ]
+  },
+  missions:{
+    cols:[{name:'id',type:'INTEGER'},{name:'name',type:'TEXT'},{name:'base_id',type:'INTEGER'},{name:'officer_id',type:'INTEGER'},{name:'priority',type:'INTEGER'},{name:'status',type:'TEXT'},{name:'secret_id',type:'TEXT'}],
+    rows:[
+      {id:1,name:"design_plans",base_id:1,officer_id:3,priority:5,status:"ongoing",secret_id:"AS-1982"},
+      {id:2,name:"intercepting",base_id:3,officer_id:2,priority:4,status:"completed",secret_id:"SK-752"},
+      {id:3,name:"infiltrating",base_id:2,officer_id:1,priority:3,status:"ongoing",secret_id:"EM-201"},
+      {id:4,name:"monitoring",base_id:4,officer_id:4,priority:2,status:"pending",secret_id:"CV-883"},
+      {id:5,name:"decrypting",base_id:null,officer_id:5,priority:5,status:"failed",secret_id:null}
+    ]
+  }
+};
+
+// ── persistence ──────────────────────────────────────────
+function saveDB(){try{localStorage.setItem('sqlstudio',JSON.stringify(DB))}catch(e){}}
+function loadDB(){try{const s=localStorage.getItem('sqlstudio');if(s)DB=JSON.parse(s)}catch(e){}}
+
+// ── helpers ──────────────────────────────────────────────
+function getRows(t){if(!DB[t])throw `Table inconnue: ${t}`;return DB[t].rows}
+function pfx(row,alias){const o={};for(const k in row)o[`${alias}.${k}`]=row[k];return o}
+
+function resolve(ref,row){
+  const rl=ref.trim().toLowerCase();
+  let k=Object.keys(row).find(k=>k.toLowerCase()===rl);
+  if(k!==undefined)return row[k];
+  k=Object.keys(row).find(k=>k.toLowerCase().endsWith('.'+rl));
+  return k!==undefined?row[k]:undefined;
+}
+
+function lit(s){
+  s=s.trim();
+  if((s.startsWith("'")&&s.endsWith("'"))||(s.startsWith('"')&&s.endsWith('"')))return s.slice(1,-1);
+  if(/^NULL$/i.test(s))return null;
+  const n=Number(s);return isNaN(n)?s:n;
+}
+
+function splitTop(expr,kw){
+  const u=expr.toUpperCase(),sep=' '+kw.toUpperCase()+' ';
+  const parts=[];let depth=0,cD=0,inStr=false,sc='',start=0;
+  for(let i=0;i<expr.length;i++){
+    const c=expr[i];
+    if(inStr){if(c===sc)inStr=false;continue}
+    if(c==="'"||c==='"'){inStr=true;sc=c;continue}
+    if(c==='('){depth++;continue}if(c===')'){depth--;continue}
+    if(/^CASE\b/i.test(u.slice(i)))cD++;
+    if(/^END\b/i.test(u.slice(i))&&cD>0)cD--;
+    if(depth===0&&cD===0&&u.slice(i).startsWith(sep)){
+      parts.push(expr.slice(start,i).trim());i+=sep.length-1;start=i+1;
+    }
+  }
+  parts.push(expr.slice(start).trim());return parts;
+}
+
+function splitFields(str){
+  const fields=[],u=str.toUpperCase();
+  let depth=0,cD=0,inStr=false,sc='',start=0;
+  for(let i=0;i<str.length;i++){
+    const c=str[i];
+    if(inStr){if(c===sc)inStr=false;continue}
+    if(c==="'"||c==='"'){inStr=true;sc=c;continue}
+    if(c==='('){depth++;continue}if(c===')'){depth--;continue}
+    if(/^CASE\b/i.test(u.slice(i)))cD++;
+    if(/^END\b/i.test(u.slice(i))&&cD>0)cD--;
+    if(c===','&&depth===0&&cD===0){fields.push(str.slice(start,i).trim());start=i+1}
+  }
+  fields.push(str.slice(start).trim());return fields;
+}
+
+function splitPlus(expr){
+  const parts=[];let depth=0,inStr=false,sc='',start=0;
+  for(let i=0;i<expr.length;i++){
+    const c=expr[i];
+    if(inStr){if(c===sc)inStr=false;continue}
+    if(c==="'"||c==='"'){inStr=true;sc=c;continue}
+    if(c==='(')depth++;else if(c===')')depth--;
+    else if(c==='+'&&depth===0){parts.push(expr.slice(start,i).trim());start=i+1}
+  }
+  parts.push(expr.slice(start).trim());return parts;
+}
+
+// ── condition evaluator ──────────────────────────────────
+function evalCond(expr,row){
+  expr=expr.trim();if(!expr)return true;
+  let ok=true;
+  while(ok&&expr.startsWith('(')){
+    ok=false;let d=0,cl=-1;
+    for(let i=0;i<expr.length;i++){
+      if(expr[i]==='(')d++;else if(expr[i]===')'){d--;if(d===0){cl=i;break}}
+    }
+    if(cl===expr.length-1){expr=expr.slice(1,-1).trim();ok=true}
+  }
+  const or=splitTop(expr,'OR');if(or.length>1)return or.some(p=>evalCond(p,row));
+  const and=splitTop(expr,'AND');if(and.length>1)return and.every(p=>evalCond(p,row));
+  const inm=expr.match(/^(.+?)\s+IS\s+(NOT\s+)?NULL\s*$/i);
+  if(inm){const v=resolve(inm[1].trim(),row);return inm[2]?(v!==null&&v!==undefined):(v===null||v===undefined)}
+  const inL=expr.match(/^(.+?)\s+(NOT\s+)?IN\s*\(([^)]*)\)\s*$/i);
+  if(inL){
+    const v=evalVal(inL[1].trim(),row);
+    const vals=inL[3].split(',').map(x=>lit(x.trim()));
+    const found=vals.some(x=>typeof v==='string'&&typeof x==='string'?v.toLowerCase()===x.toLowerCase():v==x);
+    return inL[2]?!found:found;
+  }
+  const cm=expr.match(/^(.+?)\s*(>=|<=|<>|!=|>|<|=)\s*(.+)$/);
+  if(cm){return cmpOp(evalVal(cm[1].trim(),row),cm[2],evalVal(cm[3].trim(),row))}
+  return false;
+}
+
+function cmpOp(a,op,b){
+  if(a===null||b===null)return false;
+  const av=typeof a==='string'?a.toLowerCase():a,bv=typeof b==='string'?b.toLowerCase():b;
+  if(op==='=')return av==bv;if(op==='!='||op==='<>')return av!=bv;
+  if(op==='>')return a>b;if(op==='<')return a<b;
+  if(op==='>=')return a>=b;if(op==='<=')return a<=b;
+  return false;
+}
+
+function evalVal(expr,row){
+  expr=expr.trim();
+  if(expr.startsWith("'")||expr.startsWith('"')||/^NULL$/i.test(expr))return lit(expr);
+  if(/^-?\d/.test(expr))return lit(expr);
+  const v=resolve(expr,row);return v!==undefined?v:lit(expr);
+}
+
+function evalCase(expr,row){
+  let inner=expr.replace(/^\s*CASE\s*/i,'').replace(/\s*END\s*$/i,'').trim();
+  let elseVal=null;
+  const em=inner.match(/\bELSE\s+([\s\S]+?)$/i);
+  if(em){elseVal=evalVal(em[1].trim(),row);inner=inner.slice(0,em.index).trim()}
+  const re=/\bWHEN\s+([\s\S]+?)\s+THEN\s+([\s\S]+?)(?=\s+\bWHEN\b|$)/gi;
+  let m;while((m=re.exec(inner))!==null){if(evalCond(m[1].trim(),row))return evalVal(m[2].trim(),row)}
+  return elseVal;
+}
+
+function evalExpr(expr,row){
+  let s=expr.trim(),n=0;
+  while(/\bCASE\b/i.test(s)&&n++<20)s=s.replace(/\bCASE\b[\s\S]*?\bEND\b/i,m=>evalCase(m,row));
+  s=s.trim();
+  if(s.startsWith('(')&&s.endsWith(')'))s=s.slice(1,-1).trim();
+  const parts=splitPlus(s);
+  if(parts.length>1)return parts.reduce((acc,p)=>acc+(Number(evalVal(p.trim(),row))||0),0);
+  return evalVal(s,row);
+}
+
+// ── SELECT engine ────────────────────────────────────────
+function parseSQL(sql){
+  let s=sql.replace(/\s+/g,' ').trim().replace(/;$/,'');
+  const distinct=/\bSELECT\s+DISTINCT\b/i.test(s);
+  const selM=s.match(/\bSELECT\b\s+(?:DISTINCT\s+)?([\s\S]+?)\bFROM\b/i);
+  if(!selM)throw 'SELECT...FROM manquant';
+  const frmM=s.match(/\bFROM\s+(\w+)(?:\s+(?:AS\s+)?(\w+))?/i);
+  if(!frmM)throw 'FROM invalide';
+  const jRE=/\b(LEFT\s+(?:OUTER\s+)?|INNER\s+)?JOIN\s+(\w+)(?:\s+(?:AS\s+)?(\w+))?\s+ON\s+([\s\S]+?)(?=\b(?:(?:LEFT|INNER)\s+)?JOIN\b|\bWHERE\b|\bORDER\b|\bGROUP\b|\bLIMIT\b|$)/gi;
+  const joins=[...s.matchAll(jRE)].map(m=>({
+    type:m[1]&&/LEFT/i.test(m[1])?'LEFT':'INNER',
+    table:m[2].toLowerCase(),alias:(m[3]||m[2]).toLowerCase(),on:m[4].trim()
+  }));
+  const wM=s.match(/\bWHERE\b([\s\S]+?)(?:\bORDER\b|\bGROUP\b|\bLIMIT\b|$)/i);
+  const oM=s.match(/\bORDER\s+BY\b([\s\S]+?)(?:\bLIMIT\b|$)/i);
+  const lM=s.match(/\bLIMIT\s+(\d+)/i);
+  return{
+    select:selM[1].trim(),distinct,
+    from:{table:frmM[1].toLowerCase(),alias:(frmM[2]||frmM[1]).toLowerCase()},
+    joins,where:wM?wM[1].trim():null,
+    orderBy:oM?oM[1].trim():null,
+    limit:lM?parseInt(lM[1]):null
+  };
+}
+
+function buildRows(p){
+  let rows=getRows(p.from.table).map(r=>pfx(r,p.from.alias));
+  for(const j of p.joins){
+    const right=getRows(j.table).map(r=>pfx(r,j.alias));
+    const nullR=right.length>0?Object.fromEntries(Object.keys(right[0]).map(k=>[k,null])):{};
+    const res=[];
+    if(j.type==='LEFT'){
+      for(const lr of rows){
+        const matched=right.filter(rr=>evalCond(j.on,{...lr,...rr}));
+        if(!matched.length)res.push({...lr,...nullR});
+        else matched.forEach(rr=>res.push({...lr,...rr}));
+      }
+    }else{
+      for(const lr of rows)for(const rr of right)
+        if(evalCond(j.on,{...lr,...rr}))res.push({...lr,...rr});
+    }
+    rows=res;
+  }
+  return rows;
+}
+
+function project(rows,sel){
+  function strip(rows){
+    if(!rows.length)return rows;
+    const cols=Object.keys(rows[0]);
+    const s=cols.map(c=>c.includes('.')?c.split('.').pop():c);
+    if(new Set(s).size!==s.length)return rows;
+    return rows.map(r=>{const o={};cols.forEach((c,i)=>o[s[i]]=r[c]);return o;});
+  }
+  if(sel.trim()==='*')return strip(rows.map(r=>({...r})));
+  const fields=splitFields(sel);
+  return rows.map(row=>{
+    const out={};
+    for(const f of fields){
+      const am=f.match(/^([\s\S]+?)\s+AS\s+(\w+)\s*$/i);
+      let expr,col;
+      if(am){expr=am[1].trim();col=am[2]}
+      else{expr=f.trim();col=expr.includes('.')?expr.split('.').pop():expr.replace(/[^a-zA-Z0-9_]/g,'')||expr}
+      if(/\bCASE\b/i.test(expr)||/[+\-\*]/.test(expr)||expr.startsWith('(')){
+        out[col]=evalExpr(expr,row);
+      }else{
+        const v=resolve(expr,row);out[col]=v!==undefined?v:evalVal(expr,row);
+      }
+    }
+    return out;
+  });
+}
+
+function execSELECT(sql){
+  const p=parseSQL(sql);
+  let rows=buildRows(p);
+  if(p.where)rows=rows.filter(r=>evalCond(p.where,r));
+  rows=project(rows,p.select);
+  if(p.distinct){const seen=new Set();rows=rows.filter(r=>{const k=JSON.stringify(Object.values(r));if(seen.has(k))return false;seen.add(k);return true;})}
+  if(p.orderBy){
+    const keys=p.orderBy.trim().split(',').map(x=>{const m=x.trim().match(/^([\s\S]+?)\s+(ASC|DESC)$/i);return m?{f:m[1].trim(),d:m[2].toUpperCase()}:{f:x.trim(),d:'ASC'}});
+    rows=[...rows].sort((a,b)=>{for(const{f,d}of keys){const av=a[f],bv=b[f];if(av===bv)continue;if(av===null)return 1;if(bv===null)return-1;const c=av<bv?-1:1;return d==='DESC'?-c:c}return 0;});
+  }
+  if(p.limit)rows=rows.slice(0,p.limit);
+  return rows;
+}
+
+// ── DDL engine ───────────────────────────────────────────
+function execDDL(sql){
+  let s=sql.replace(/\s+/g,' ').trim().replace(/;$/,'');
+
+  const crM=s.match(/^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)\s*\(([\s\S]+)\)\s*$/i);
+  if(crM){
+    const t=crM[1].toLowerCase();
+    if(DB[t])throw `Table '${t}' existe déjà`;
+    const cols=crM[2].split(',').map(c=>{const p=c.trim().split(/\s+/);return{name:p[0].toLowerCase(),type:(p[1]||'TEXT').toUpperCase()}});
+    DB[t]={cols,rows:[]};saveDB();renderTables();
+    return`Table '${t}' créée — ${cols.length} colonne(s)`;
+  }
+
+  const drM=s.match(/^DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?(\w+)\s*$/i);
+  if(drM){
+    const t=drM[1].toLowerCase();
+    if(!DB[t])throw `Table '${t}' inexistante`;
+    delete DB[t];saveDB();renderTables();
+    return`Table '${t}' supprimée`;
+  }
+
+  const inM=s.match(/^INSERT\s+INTO\s+(\w+)\s*(?:\(([^)]+)\))?\s*VALUES\s*\(([^)]+)\)\s*$/i);
+  if(inM){
+    const t=inM[1].toLowerCase();
+    if(!DB[t])throw `Table '${t}' inexistante`;
+    const cols=inM[2]?inM[2].split(',').map(c=>c.trim().toLowerCase()):DB[t].cols.map(c=>c.name);
+    const vals=inM[3].split(',').map(v=>lit(v.trim()));
+    if(cols.length!==vals.length)throw `${cols.length} colonnes, ${vals.length} valeurs`;
+    const row={};cols.forEach((c,i)=>row[c]=vals[i]);
+    DB[t].rows.push(row);saveDB();renderTables();
+    return`1 ligne insérée dans '${t}'`;
+  }
+
+  const upM=s.match(/^UPDATE\s+(\w+)\s+SET\s+([\s\S]+?)(?:\s+WHERE\s+([\s\S]+))?\s*$/i);
+  if(upM){
+    const t=upM[1].toLowerCase();
+    if(!DB[t])throw `Table '${t}' inexistante`;
+    const sets=upM[2].split(',').map(x=>{const m=x.trim().match(/^(\w+)\s*=\s*([\s\S]+)$/);if(!m)throw `SET invalide`;return{col:m[1].toLowerCase(),val:lit(m[2].trim())}});
+    let n=0;
+    for(const row of DB[t].rows){if(!upM[3]||evalCond(upM[3],row)){sets.forEach(({col,val})=>row[col]=val);n++}}
+    saveDB();renderTables();
+    return`${n} ligne(s) modifiée(s) dans '${t}'`;
+  }
+
+  const dlM=s.match(/^DELETE\s+FROM\s+(\w+)(?:\s+WHERE\s+([\s\S]+))?\s*$/i);
+  if(dlM){
+    const t=dlM[1].toLowerCase();
+    if(!DB[t])throw `Table '${t}' inexistante`;
+    const before=DB[t].rows.length;
+    DB[t].rows=dlM[2]?DB[t].rows.filter(r=>!evalCond(dlM[2],r)):[];
+    saveDB();renderTables();
+    return`${before-DB[t].rows.length} ligne(s) supprimée(s) dans '${t}'`;
+  }
+
+  return null;
+}
+
+// ── runner ───────────────────────────────────────────────
+let lastRows=[];
+
+function run(){
+  const sql=document.getElementById('sql').value.trim();
+  const out=document.getElementById('out'),cnt=document.getElementById('rcnt'),exp=document.getElementById('rexp');
+  lastRows=[];cnt.textContent='';exp.style.display='none';
+  if(!sql){out.innerHTML='<span class="empty">Requête vide.</span>';return}
+  try{
+    if(/==/.test(sql)){
+      out.innerHTML=`<div class="merr">⚠ SQL utilise <b>=</b> pour l'égalité, pas <b>==</b> (c'est du JavaScript).</div>`;
+      if(TS.active){TS.err[QS[TS.cur].id]=(TS.err[QS[TS.cur].id]||0)+1;renderQ();}
+      return;
+    }
+    if(/^\s*SELECT\b/i.test(sql)){
+      const rows=execSELECT(sql);lastRows=rows;
+      out.innerHTML=renderTable(rows);
+      cnt.textContent=`${rows.length} ligne${rows.length!==1?'s':''}`;
+      if(rows.length>0)exp.style.display='block';
+      if(TS.active)validateTraining(rows);
+    }else{
+      const msg=execDDL(sql);
+      out.innerHTML=msg?`<div class="mok">${msg}</div>`:`<div class="merr">Syntaxe non reconnue</div>`;
+      if(TS.active)validateTraining([]);
+    }
+  }catch(e){out.innerHTML=`<div class="merr">⚠ ${e}</div>`}
+}
+
+// ── render ───────────────────────────────────────────────
+function renderTable(rows){
+  if(!rows.length)return'<div class="minf">Aucun résultat.</div>';
+  const cols=Object.keys(rows[0]);
+  let h=`<table class="res"><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;
+  for(const row of rows)
+    h+=`<tr>${cols.map(c=>{const v=row[c];return`<td>${v===null||v===undefined?'<span class="nval">NULL</span>':v}</td>`}).join('')}</tr>`;
+  return h+'</table>';
+}
+
+function renderTables(){
+  const el=document.getElementById('tables'),names=Object.keys(DB);
+  if(!names.length){el.innerHTML='<div style="color:#1a3a4a;font-size:11px;padding:10px">Aucune table — chargez la démo ou créez une table.</div>';updateStats();return}
+  el.innerHTML=names.map(t=>{
+    const{cols,rows}=DB[t];
+    const maxR=Math.min(rows.length,5);
+    let data='';
+    if(rows.length>0){
+      const dc=cols.map(c=>c.name);
+      data=`<div class="tdata"><table>
+        <tr>${dc.map(c=>`<th>${c}</th>`).join('')}</tr>
+        ${rows.slice(0,maxR).map(r=>`<tr>${dc.map(c=>`<td>${r[c]===null?'<i style="color:#1a3a4a">NULL</i>':r[c]}</td>`).join('')}</tr>`).join('')}
+        ${rows.length>maxR?`<tr><td colspan="${dc.length}" style="color:#2a5a6a;font-size:10px">+${rows.length-maxR} lignes</td></tr>`:''}
+      </table></div>`;
+    }
+    return`<div class="ti">
+      <div class="th2" onclick="toggleT('${t}')">
+        <span class="tarr" id="ar-${t}">▶</span>
+        <span class="tnm">${t}</span>
+        <span class="tcnt">${rows.length} lg</span>
+      </div>
+      <div class="tb" id="bd-${t}">
+        <div style="margin-bottom:5px">${cols.map(c=>`<div class="cr"><span class="cn">${c.name}</span><span class="ctp">${c.type}</span></div>`).join('')}</div>
+        ${data}
+        <div class="tacts">
+          <button class="bsm" onclick="event.stopPropagation();selTable('${t}')">SELECT *</button>
+          <button class="bdng" onclick="event.stopPropagation();dropTable('${t}')">DROP</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  updateStats();
+}
+
+function toggleT(t){
+  document.getElementById('bd-'+t).classList.toggle('op');
+  document.getElementById('ar-'+t).classList.toggle('op');
+}
+function selTable(t){document.getElementById('sql').value=`SELECT * FROM ${t}`;run()}
+function dropTable(t){
+  if(!confirm(`DROP TABLE ${t} ?`))return;
+  delete DB[t];saveDB();renderTables();
+  document.getElementById('out').innerHTML=`<div class="mok">Table '${t}' supprimée</div>`;
+}
+function updateStats(){
+  const n=Object.keys(DB).length,r=Object.values(DB).reduce((s,t)=>s+t.rows.length,0);
+  document.getElementById('stats').textContent=`${n} table${n!==1?'s':''} · ${r} ligne${r!==1?'s':''}`;
+}
+
+// ── keywords ─────────────────────────────────────────────
+const KW=[
+  {cls:'kr',items:[['SELECT','SELECT '],['DISTINCT','DISTINCT '],['FROM',' FROM '],['WHERE',' WHERE '],['ORDER BY',' ORDER BY '],['ASC',' ASC'],['DESC',' DESC'],['LIMIT',' LIMIT ']]},
+  {cls:'kj',items:[['INNER JOIN',' INNER JOIN  ON '],['LEFT JOIN',' LEFT JOIN  ON '],['ON',' ON ']]},
+  {cls:'kc',items:[['AND',' AND '],['OR',' OR '],['NOT',' NOT '],['IN',' IN (...)'],['IS NULL',' IS NULL'],['IS NOT NULL',' IS NOT NULL'],['BETWEEN',' BETWEEN  AND ']]},
+  {cls:'kw',items:[['INSERT INTO','INSERT INTO  VALUES (...)'],['UPDATE SET','UPDATE  SET  = \'\' WHERE '],['DELETE FROM','DELETE FROM  WHERE ']]},
+  {cls:'kd',items:[['CREATE TABLE','CREATE TABLE  (id INTEGER, nom TEXT)'],['DROP TABLE','DROP TABLE ']]}
+];
+
+function buildKW(){
+  const el=document.getElementById('kws');
+  KW.forEach((g,i)=>{
+    if(i>0)el.insertAdjacentHTML('beforeend','<span class="ks">|</span>');
+    g.items.forEach(([lbl,snip])=>{
+      const b=document.createElement('button');
+      b.className=`kb ${g.cls}`;b.textContent=lbl;b.title=snip.trim();
+      b.onclick=()=>{const ta=document.getElementById('sql');ta.value=ta.value.trimEnd()+snip;ta.focus()};
+      el.appendChild(b);
+    });
+  });
+}
+
+// ── CSV ──────────────────────────────────────────────────
+function exportCSV(){
+  if(!lastRows.length)return;
+  const cols=Object.keys(lastRows[0]);
+  const lines=[cols.join(','),...lastRows.map(r=>cols.map(c=>{
+    const v=r[c];if(v===null||v===undefined)return'';
+    const s=String(v);return s.includes(',')||s.includes('"')?`"${s.replace(/"/g,'""')}"`:s;
+  }).join(','))];
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
+  a.download='export.csv';a.click();
+}
+
+function handleCSV(input){
+  const file=input.files[0];if(!file)return;
+  const tname=file.name.replace(/\.csv$/i,'').replace(/[^a-zA-Z0-9_]/g,'_').toLowerCase();
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const lines=e.target.result.split('\n').filter(l=>l.trim());
+    if(lines.length<2){alert('CSV trop court');return}
+    const cols=lines[0].split(',').map(c=>c.trim().replace(/"/g,'').toLowerCase());
+    const colDefs=cols.map(c=>({name:c,type:'TEXT'}));
+    const rows=lines.slice(1).map(line=>{
+      const vals=parseCSVLine(line);const row={};
+      cols.forEach((c,i)=>{const v=vals[i]===undefined?null:vals[i].trim();row[c]=v===''?null:(!isNaN(v)&&v!==''?Number(v):v)});
+      return row;
+    });
+    const fn=DB[tname]?tname+'_'+Date.now():tname;
+    DB[fn]={cols:colDefs,rows};saveDB();renderTables();
+    document.getElementById('out').innerHTML=`<div class="mok">Table '${fn}' importée — ${rows.length} lignes</div>`;
+  };
+  reader.readAsText(file);input.value='';
+}
+
+function parseCSVLine(line){
+  const vals=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'&&!inQ){inQ=true}
+    else if(c==='"'&&inQ){if(line[i+1]==='"'){cur+='"';i++}else inQ=false}
+    else if(c===','&&!inQ){vals.push(cur);cur=''}
+    else cur+=c;
+  }
+  vals.push(cur);return vals;
+}
+
+const COURS={
+  1:`<b>SELECT</b> — lire des données<br>
+La commande de base pour interroger une table.<br>
+<code>SELECT * FROM table</code> retourne toutes les colonnes et toutes les lignes.<br>
+<code>SELECT col1, col2 FROM table</code> retourne uniquement les colonnes demandées.<br>
+<div class="ex">SELECT * FROM officer
+SELECT name, rank FROM officer</div>`,
+  2:`<b>WHERE</b> — filtrer les lignes<br>
+Ajouter une condition après <code>FROM table</code> pour ne retourner que les lignes qui la satisfont.<br>
+Opérateurs : <code>=  !=  &gt;  &lt;  &gt;=  &lt;=</code><br>
+⚠ En SQL l'égalité s'écrit <b>=</b> et non == (JavaScript).<br>
+<div class="ex">SELECT * FROM missions WHERE priority > 3
+SELECT * FROM officer WHERE rank = 'Amiral'</div>`,
+  3:`<b>AND / OR / IN / IS NULL</b> — conditions multiples<br>
+<code>AND</code> : les deux conditions doivent être vraies.<br>
+<code>OR</code> : au moins une condition doit être vraie.<br>
+<code>IN (a, b, c)</code> : la valeur est dans la liste.<br>
+<code>IS NULL</code> / <code>IS NOT NULL</code> : teste l'absence de valeur.<br>
+<div class="ex">WHERE status = 'ongoing' AND priority >= 4
+WHERE base_id IS NULL OR status = 'failed'
+WHERE id IN (1, 3, 5)</div>`,
+  4:`<b>DISTINCT / ORDER BY</b> — dédoublonner et trier<br>
+<code>DISTINCT</code> supprime les doublons dans le résultat.<br>
+<code>ORDER BY col ASC</code> trie par ordre croissant (défaut).<br>
+<code>ORDER BY col DESC</code> trie par ordre décroissant.<br>
+<div class="ex">SELECT DISTINCT rank FROM officer
+SELECT * FROM missions ORDER BY priority DESC
+SELECT * FROM missions ORDER BY status ASC, priority DESC</div>`,
+  5:`<b>INNER JOIN</b> — relier deux tables<br>
+Combine les lignes de deux tables quand la condition <code>ON</code> est vraie.<br>
+Les lignes <b>sans correspondance</b> des deux côtés sont exclues.<br>
+On donne un alias (<code>m</code>, <code>b</code>) pour abréger les noms de colonnes.<br>
+<div class="ex">SELECT m.name, b.name
+FROM missions m
+INNER JOIN base b ON m.base_id = b.id</div>`,
+  6:`<b>LEFT JOIN</b> — garder toutes les lignes gauches<br>
+Comme INNER JOIN, mais conserve <b>toutes</b> les lignes de la table de gauche.<br>
+Si aucune correspondance n'existe à droite, les colonnes droites valent <code>NULL</code>.<br>
+Utile pour trouver les lignes "orphelines" avec <code>WHERE droite.id IS NULL</code>.<br>
+<div class="ex">SELECT m.name, b.name
+FROM missions m
+LEFT JOIN base b ON m.base_id = b.id
+-- mission sans base : b.name = NULL
+
+WHERE b.id IS NULL  -- uniquement les orphelines</div>`,
+  7:`<b>JOIN multiple</b> — 3 tables ou plus<br>
+On enchaîne les JOIN les uns après les autres.<br>
+Chaque JOIN ajoute une table au résultat courant.<br>
+L'ordre des LEFT JOIN est important : partir toujours de la table principale.<br>
+<div class="ex">SELECT m.name, b.name, o.name
+FROM missions m
+LEFT JOIN base b    ON m.base_id    = b.id
+LEFT JOIN officer o ON m.officer_id = o.id</div>`,
+  8:`<b>CASE WHEN</b> — colonne calculée conditionnelle<br>
+Crée une nouvelle colonne dont la valeur dépend d'une condition.<br>
+<code>ELSE</code> est la valeur par défaut si aucune condition n'est vraie.<br>
+On peut additionner plusieurs CASE WHEN pour obtenir un <b>score</b>.<br>
+<div class="ex">CASE WHEN priority >= 4 THEN 'HAUTE' ELSE 'NORMALE' END AS urgence
+
+-- scoring :
+(CASE WHEN priority >= 4 THEN 1 ELSE 0 END
++CASE WHEN status = 'ongoing' THEN 1 ELSE 0 END) AS score</div>`,
+  9:`<b>INSERT INTO</b> — insérer une ligne<br>
+Ajoute une nouvelle ligne dans une table existante.<br>
+Les colonnes et valeurs doivent correspondre dans le même ordre.<br>
+<div class="ex">INSERT INTO officer (id, name, rank, access_code)
+VALUES (6, 'Vanta', 'Colonel', 'VAN-001')</div>`,
+  10:`<b>CREATE TABLE</b> — créer une table<br>
+Définit la structure d'une nouvelle table avec ses colonnes et leurs types.<br>
+Types courants : <code>INTEGER</code> (nombre entier), <code>TEXT</code> (chaîne), <code>REAL</code> (décimal).<br>
+<div class="ex">CREATE TABLE agent (
+  id        INTEGER,
+  codename  TEXT,
+  clearance INTEGER
+)</div>`
+};
+
+function showCours(){
+  const q=QS[TS.cur];
+  const el=document.getElementById('qcours');
+  if(el.style.display==='none'){
+    el.innerHTML=COURS[q.lvl]||'';
+    el.style.display='block';
+  }else{
+    el.style.display='none';
+  }
+}
+
+// ── TS persistence ────────────────────────────────────────
+function saveTS(){
+  try{localStorage.setItem('sqlstudio_ts',JSON.stringify({
+    cur:TS.cur,
+    solved:[...TS.solved],
+    err:TS.err,
+    alt:[...TS.alt]
+  }))}catch(e){}
+}
+function loadTS(){
+  try{
+    const s=localStorage.getItem('sqlstudio_ts');
+    if(!s)return;
+    const d=JSON.parse(s);
+    TS.cur=d.cur||0;
+    TS.solved=new Set(d.solved||[]);
+    TS.err=d.err||{};
+    TS.alt=new Set(d.alt||[]);
+  }catch(e){}
+}
+
+// ── training ──────────────────────────────────────────────
+function gv(row,col){
+  const rl=col.toLowerCase();
+  const k=Object.keys(row).find(k=>k.toLowerCase()===rl||k.toLowerCase().endsWith('.'+rl));
+  return k!==undefined?row[k]:undefined;
+}
+
+const QS=[
+  {id:1,lvl:1,titre:"SELECT — toutes colonnes",
+   q:"Affichez toutes les colonnes et lignes de la table <b>officer</b>.",
+   check:(rows)=>rows.length===5},
+  {id:2,lvl:2,titre:"WHERE — comparaison",
+   q:"Affichez les missions dont la <b>priority</b> est supérieure à 3.",
+   check:(rows)=>rows.length===3&&rows.every(r=>Number(gv(r,'priority'))>3)},
+  {id:3,lvl:3,titre:"IS NULL / OR",
+   q:"Affichez les missions dont le <b>base_id</b> est NULL ou dont le <b>status</b> est 'failed'.",
+   check:(rows)=>rows.length===1&&Number(gv(rows[0],'id'))===5},
+  {id:4,lvl:4,titre:"DISTINCT",
+   q:"Affichez les valeurs distinctes du champ <b>rank</b> dans la table officer.",
+   check:(rows)=>rows.length===4,
+   hint:"Mot-clé : SELECT DISTINCT rank FROM officer",
+   alt:"Combien de grades différents existent ? Listez-les <b>sans doublon</b>."},
+  {id:5,lvl:4,titre:"ORDER BY DESC",
+   q:"Listez toutes les missions triées par <b>priority décroissante</b>.",
+   check:(rows)=>{if(rows.length!==5)return false;const p=rows.map(r=>Number(gv(r,'priority')));for(let i=0;i<p.length-1;i++)if(p[i]<p[i+1])return false;return true;},
+   hint:"ORDER BY priority DESC",
+   alt:"Classez les missions de la plus urgente à la moins urgente (5 lignes triées)."},
+  {id:6,lvl:5,titre:"INNER JOIN — 2 tables",
+   q:"Affichez le nom de chaque mission avec le nom de sa base. Les missions sans base n'apparaissent pas.",
+   check:(rows)=>rows.length===4,
+   hint:"FROM missions m INNER JOIN base b ON m.base_id = b.id",
+   alt:"Quelles missions ont une base assignée ? Mission + base (4 lignes)."},
+  {id:7,lvl:5,titre:"INNER JOIN — autre FK",
+   q:"Pour chaque mission, affichez le nom de la mission et le nom de l'officier responsable.",
+   check:(rows)=>rows.length===5,
+   hint:"JOIN officer o ON m.officer_id = o.id",
+   alt:"Associez chaque mission à son officier via <b>officer_id</b> (5 lignes)."},
+  {id:8,lvl:6,titre:"LEFT JOIN — garder les NULL",
+   q:"Listez <b>toutes</b> les missions avec le nom de leur base. La mission sans base doit apparaître avec NULL.",
+   check:(rows)=>rows.length===5,
+   hint:"LEFT JOIN conserve toutes les lignes gauches même sans correspondance droite.",
+   alt:"Avec INNER JOIN la mission 'decrypting' disparaît. Utilisez LEFT JOIN pour la conserver."},
+  {id:9,lvl:6,titre:"LEFT JOIN + IS NULL",
+   q:"Trouvez les missions <b>sans base assignée</b> via LEFT JOIN + condition IS NULL.",
+   check:(rows)=>rows.length===1,
+   hint:"LEFT JOIN base b ON m.base_id = b.id  WHERE b.id IS NULL",
+   alt:"Quelle mission n'est rattachée à aucune base ? 1 seule ligne attendue."},
+  {id:10,lvl:7,titre:"3 tables — vue complète",
+   q:"Pour chaque mission : son nom, le nom de sa base, le nom de son officier. <b>Toutes les missions</b> (5 lignes).",
+   check:(rows)=>rows.length===5,
+   hint:"FROM missions m LEFT JOIN base b ON ... LEFT JOIN officer o ON ...",
+   alt:"Construisez une vue : nom mission + nom base + nom officier. 5 lignes avec NULLs."},
+  {id:11,lvl:7,titre:"3 tables + WHERE",
+   q:"Parmi les missions <b>ongoing</b>, affichez nom mission, nom base, rank officier.",
+   check:(rows)=>rows.length===2,
+   hint:"3 JOINs puis WHERE m.status = 'ongoing'",
+   alt:"Quelles missions sont en cours ? Montrez mission + base + grade. 2 lignes."},
+  {id:12,lvl:8,titre:"CASE WHEN — scoring",
+   q:"Scorez chaque mission (1 pt/critère) : priority ≥ 4 · level_security > 7 · status = 'ongoing' · rank = 'Director'. Triez par score décroissant.",
+   check:(rows)=>{
+     if(rows.length!==5)return false;
+     const cols=Object.keys(rows[0]);
+     for(const col of cols){
+       const vals=rows.map(r=>r[col]);
+       if(vals.every(v=>typeof v==='number'&&v>=0&&v<=4)){
+         let ok=true;for(let i=0;i<vals.length-1;i++)if(vals[i]<vals[i+1])ok=false;
+         if(ok)return true;
+       }
+     }
+     return false;
+   },
+   hint:"(CASE WHEN ... THEN 1 ELSE 0 END + CASE WHEN ...) AS score  ORDER BY score DESC",
+   alt:"Quelle mission cumule le plus de critères d'alerte ? Calculez un score sur 4 et triez."},
+  {id:13,lvl:8,titre:"CASE WHEN — étiquette",
+   q:"Ajoutez une colonne <b>urgence</b> : 'HAUTE' si priority ≥ 4, 'NORMALE' sinon. 5 lignes.",
+   check:(rows)=>rows.length===5&&rows.filter(r=>gv(r,'urgence')==='HAUTE').length===3,
+   hint:"CASE WHEN priority >= 4 THEN 'HAUTE' ELSE 'NORMALE' END AS urgence",
+   alt:"Classez les missions en deux catégories selon leur priorité. 3 HAUTE, 2 NORMALE."},
+  {id:14,lvl:9,titre:"INSERT INTO",
+   q:"Insérez un officier : id=6, name='Vanta', rank='Colonel', access_code='VAN-001'.",
+   check:(rows,db)=>db&&db.officer&&db.officer.rows.some(r=>r.id===6&&r.name==='Vanta')},
+  {id:15,lvl:10,titre:"CREATE TABLE",
+   q:"Créez une table <b>agent</b> avec : id (INTEGER), codename (TEXT), clearance (INTEGER).",
+   check:(rows,db)=>db&&db.agent&&db.agent.cols.length>=3},
+];
+
+const HINTS_AT=5, SOL_AT=10;
+const NO_HINT_LVLS=new Set([1,2,3,9,10]);
+
+let TS={active:false,cur:0,err:{},solved:new Set(),alt:new Set()};
+
+function toggleTraining(){
+  if(TS.active){exitTraining();return}
+  if(Object.keys(DB).length===0){DB=JSON.parse(JSON.stringify(DEMO));saveDB();renderTables()}
+  loadTS();
+  TS.active=true;
+  document.getElementById('btntr').classList.add('on');
+  document.getElementById('btntr').textContent='■ training';
+  document.getElementById('qz').style.display='block';
+  renderQ();
+}
+
+function exitTraining(){
+  TS.active=false;
+  document.getElementById('btntr').classList.remove('on');
+  document.getElementById('btntr').textContent='▷ training';
+  document.getElementById('qz').style.display='none';
+}
+
+function renderQ(){
+  const q=QS[TS.cur];
+  const errs=TS.err[q.id]||0;
+  const lvlName=['','SELECT','WHERE','AND/OR/NULL','DISTINCT·ORDER BY','INNER JOIN','LEFT JOIN','3 TABLES','CASE WHEN','INSERT','CREATE'];
+  document.getElementById('qlvl').textContent=`Niveau ${q.lvl} — ${lvlName[q.lvl]} · ${TS.cur+1}/${QS.length}`;
+  const txt=TS.alt.has(q.id)&&q.alt?q.alt:q.q;
+  document.getElementById('qtxt').innerHTML=txt;
+  // dots
+  const dotsEl=document.getElementById('qdots');
+  dotsEl.innerHTML=QS.map((x,i)=>{
+    let cls='qd';
+    if(TS.solved.has(x.id))cls+=' done';
+    else if(i===TS.cur)cls+=' cur';
+    else if(TS.err[x.id])cls+=' err';
+    return`<div class="${cls}" title="Q${i+1} Niv${x.lvl}"></div>`;
+  }).join('');
+  // errors + hint + solution
+  const errEl=document.getElementById('qerr');
+  const hintEl=document.getElementById('qhint');
+  const solEl=document.getElementById('qsol');
+  if(!NO_HINT_LVLS.has(q.lvl)&&errs>0){
+    errEl.textContent=`${errs} erreur${errs>1?'s':''}`;
+    if(errs>=HINTS_AT&&q.hint){hintEl.textContent='💡 '+q.hint;hintEl.style.display='block'}
+    if(errs>=SOL_AT&&q.hint){
+      solEl.textContent='— Solution —\n'+getSolution(q);
+      solEl.style.display='block';
+    }
+  }else{
+    errEl.textContent='';hintEl.style.display='none';solEl.style.display='none';
+  }
+}
+
+function getSolution(q){
+  const sols={
+    1:'SELECT * FROM officer',
+    2:'SELECT * FROM missions WHERE priority > 3',
+    3:'SELECT * FROM missions WHERE base_id IS NULL OR status = \'failed\'',
+    4:'SELECT DISTINCT rank FROM officer',
+    5:'SELECT * FROM missions ORDER BY priority DESC',
+    6:'SELECT m.name, b.name FROM missions m\nINNER JOIN base b ON m.base_id = b.id',
+    7:'SELECT m.name, o.name FROM missions m\nJOIN officer o ON m.officer_id = o.id',
+    8:'SELECT m.name, b.name FROM missions m\nLEFT JOIN base b ON m.base_id = b.id',
+    9:'SELECT m.name FROM missions m\nLEFT JOIN base b ON m.base_id = b.id\nWHERE b.id IS NULL',
+    10:'SELECT m.name, b.name, o.name\nFROM missions m\nLEFT JOIN base b ON m.base_id = b.id\nLEFT JOIN officer o ON m.officer_id = o.id',
+    11:'SELECT m.name, b.name, o.rank\nFROM missions m\nLEFT JOIN base b ON m.base_id = b.id\nLEFT JOIN officer o ON m.officer_id = o.id\nWHERE m.status = \'ongoing\'',
+    12:"SELECT m.name, m.secret_id,\n(CASE WHEN m.priority>=4 THEN 1 ELSE 0 END\n+CASE WHEN b.level_security>7 THEN 1 ELSE 0 END\n+CASE WHEN m.status='ongoing' THEN 1 ELSE 0 END\n+CASE WHEN o.rank='Director' THEN 1 ELSE 0 END) AS score\nFROM missions m\nLEFT JOIN base b ON m.base_id=b.id\nLEFT JOIN officer o ON m.officer_id=o.id\nORDER BY score DESC",
+    13:"SELECT name, CASE WHEN priority>=4 THEN 'HAUTE' ELSE 'NORMALE' END AS urgence FROM missions",
+    14:"INSERT INTO officer (id, name, rank, access_code) VALUES (6, 'Vanta', 'Colonel', 'VAN-001')",
+    15:"CREATE TABLE agent (id INTEGER, codename TEXT, clearance INTEGER)",
+  };
+  return sols[q.id]||'';
+}
+
+function prevQ(){TS.cur=(TS.cur-1+QS.length)%QS.length;saveTS();renderQ()}
+function nextQ(){TS.cur=(TS.cur+1)%QS.length;saveTS();renderQ()}
+
+function validateTraining(rows){
+  const q=QS[TS.cur];
+  const ok=q.check(rows,DB);
+  const out=document.getElementById('out');
+  if(ok){
+    TS.solved.add(q.id);
+    const sol=getSolution(q);
+    const solHtml=sol?`<div style="font-size:11px;color:#2a6a5a;margin-top:4px">Référence :<br><span style="color:#4a9a7a">${sol.replace(/\n/g,'<br>')}</span></div>`:'';
+    out.innerHTML=`<div class="vok">✔ CORRECT</div>${solHtml}<br>`+out.innerHTML;
+    if(TS.alt.has(q.id))TS.alt.delete(q.id);
+    saveTS();renderQ();
+  }else{
+    TS.err[q.id]=(TS.err[q.id]||0)+1;
+    out.innerHTML=`<div class="vko">✘ ${TS.err[q.id]} erreur${TS.err[q.id]>1?'s':''}</div><br>`+out.innerHTML;
+    // reformuler apres SOL_AT erreurs
+    if(!NO_HINT_LVLS.has(q.lvl)&&q.alt&&TS.err[q.id]>=SOL_AT)TS.alt.add(q.id);
+    saveTS();renderQ();
+  }
+}
+
+// ── init ─────────────────────────────────────────────────
+function loadDemo(){
+  if(Object.keys(DB).length>0&&!confirm('Remplacer la DB actuelle ?'))return;
+  DB=JSON.parse(JSON.stringify(DEMO));saveDB();renderTables();
+  document.getElementById('out').innerHTML='<div class="mok">Démo chargée — 3 tables (base · officer · missions)</div>';
+}
+function clearAll(){
+  if(!confirm('Effacer toute la base ?'))return;
+  DB={};saveDB();renderTables();
+  document.getElementById('out').innerHTML='<div class="minf">Base effacée</div>';
+}
+
+loadDB();buildKW();renderTables();
+document.getElementById('sql').addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();run()}});
+</script>
+</body>
+</html>
