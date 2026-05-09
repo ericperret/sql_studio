@@ -3,7 +3,7 @@
   sql_studio.html
   Auteur  : Eric PERRET
   Date    : 2026-05-08
-  Version : 1.6
+  Version : 2.0
   Desc    : SQL learning tool — embedded full SQL interpreter + DB — zero dependencies
             SELECT, JOIN, LEFT JOIN, CASE WHEN, DDL, Training mode 15 exercices
 -->
@@ -46,7 +46,7 @@ button{font-family:'Courier New',monospace;cursor:pointer;border-radius:2px}
 .tacts{display:flex;gap:4px;margin-top:4px}
 .tacts button{font-size:10px;padding:3px 0;flex:1;font-family:'Courier New',monospace}
 /* RIGHT */
-#right{display:flex;flex-direction:column;overflow:hidden}
+#right{display:flex;flex-direction:column;overflow-y:auto}
 #kw-zone{padding:7px 12px;border-bottom:1px solid #0d2535;background:#060c14;flex-shrink:0}
 #kws{display:flex;flex-wrap:wrap;gap:3px;align-items:center}
 .ks{color:#1a3a4a;font-size:10px;padding:0 3px}
@@ -57,7 +57,7 @@ button{font-family:'Courier New',monospace;cursor:pointer;border-radius:2px}
 .kw{border-color:#3a0d2a;color:#9a4a7a;background:#100614}.kw:hover{background:#1e0a18;color:#c870a0}
 .kd{border-color:#2a0d3a;color:#7a4a9a;background:#0e0618}.kd:hover{background:#180a1e;color:#a070c8}
 #ed-zone{padding:10px 12px;border-bottom:1px solid #0d2535;flex-shrink:0}
-textarea{width:100%;height:108px;background:#030a12;border:1px solid #0d3040;color:#00e5ff;font-family:'Courier New',monospace;font-size:13px;line-height:1.6;padding:10px;resize:none;outline:none;border-radius:2px;tab-size:2}
+textarea{width:100%;height:108px;max-height:160px;background:#030a12;border:1px solid #0d3040;color:#00e5ff;font-family:'Courier New',monospace;font-size:13px;line-height:1.6;padding:10px;resize:vertical;outline:none;border-radius:2px;tab-size:2}
 textarea:focus{border-color:#00bcd4}
 #br{display:flex;gap:6px;margin-top:7px;align-items:center}
 .bx{background:#092838;border:1px solid #00bcd4;color:#00e5ff;font-size:12px;padding:5px 16px;letter-spacing:1px}
@@ -65,7 +65,7 @@ textarea:focus{border-color:#00bcd4}
 .bc{background:transparent;border:1px solid #1a3a4a;color:#3a6a7a;font-size:12px;padding:5px 10px}
 .bc:hover{color:#70a0b0}
 #sk{font-size:10px;color:#1a3a4a;margin-left:auto}
-#res-zone{flex:1;overflow-y:auto;padding:12px}
+#res-zone{flex:1;overflow-y:auto;padding:12px;min-height:120px}
 #rh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 #rh span{font-size:10px;letter-spacing:2px;color:#1a6a7a;flex:1}
 #rcnt{font-size:11px;color:#2a6a7a}
@@ -458,24 +458,41 @@ function project(rows,sel){
     if(!rows.length)return rows;
     const cols=Object.keys(rows[0]);
     const s=cols.map(c=>c.includes('.')?c.split('.').pop():c);
-    if(new Set(s).size!==s.length)return rows;
-    return rows.map(r=>{const o={};cols.forEach((c,i)=>o[s[i]]=r[c]);return o;});
+    // collision : garder alias complet table.col pour les doublons
+    const seen={};
+    const safe=s.map((name,i)=>{
+      if(s.filter(x=>x===name).length>1) return cols[i]; // garde m.name, b.name
+      return name;
+    });
+    return rows.map(r=>{const o={};cols.forEach((c,i)=>o[safe[i]]=r[c]);return o;});
   }
   if(sel.trim()==='*')return strip(rows.map(r=>({...r})));
   const fields=splitFields(sel);
+  // détecter les collisions de noms dans la liste de champs
+  const names=fields.map(f=>{
+    const am=f.match(/^[\s\S]+?\s+AS\s+(\w+)\s*$/i);
+    if(am)return am[1];
+    const e=f.trim();
+    return e.includes('.')?e.split('.').pop():e.replace(/[^a-zA-Z0-9_]/g,'')||e;
+  });
   return rows.map(row=>{
     const out={};
-    for(const f of fields){
+    fields.forEach((f,fi)=>{
       const am=f.match(/^([\s\S]+?)\s+AS\s+(\w+)\s*$/i);
       let expr,col;
       if(am){expr=am[1].trim();col=am[2]}
-      else{expr=f.trim();col=expr.includes('.')?expr.split('.').pop():expr.replace(/[^a-zA-Z0-9_]/g,'')||expr}
+      else{
+        expr=f.trim();
+        const base=expr.includes('.')?expr.split('.').pop():expr.replace(/[^a-zA-Z0-9_]/g,'')||expr;
+        // collision → garder table.col comme nom
+        col=names.filter(n=>n===base).length>1?expr:base;
+      }
       if(/\bCASE\b/i.test(expr)||/[+\-\*]/.test(expr)||expr.startsWith('(')){
         out[col]=evalExpr(expr,row);
       }else{
         const v=resolve(expr,row);out[col]=v!==undefined?v:evalVal(expr,row);
       }
-    }
+    });
     return out;
   });
 }
