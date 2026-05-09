@@ -3,7 +3,7 @@
   sql_studio.html
   Auteur  : Eric PERRET
   Date    : 2026-05-08
-  Version : 1.4
+  Version : 1.6
   Desc    : SQL learning tool — embedded full SQL interpreter + DB — zero dependencies
             SELECT, JOIN, LEFT JOIN, CASE WHEN, DDL, Training mode 15 exercices
 -->
@@ -356,6 +356,8 @@ function evalFunc(expr, row){
     const args = splitFields(cc[1]);
     return args.map(a=>{ const v=evalVal(a.trim(),row); return v===null?'':String(v); }).join('');
   }
+  // UPPER / LOWER
+  const ul = expr.match(/^(UPPER|LOWER)\s*\(([\s\S]+)\)$/i);
   if(ul){ const v=evalVal(ul[2].trim(),row); if(v===null)return null; return ul[1].toUpperCase()==='UPPER'?String(v).toUpperCase():String(v).toLowerCase(); }
   // LENGTH
   const ln = expr.match(/^LENGTH\s*\(([\s\S]+)\)$/i);
@@ -363,6 +365,27 @@ function evalFunc(expr, row){
   // SUBSTR(col, start [, len])
   const ss = expr.match(/^SUBSTR\s*\(([\s\S]+?),\s*(\d+)(?:,\s*(\d+))?\)$/i);
   if(ss){ const v=evalVal(ss[1].trim(),row); if(v===null)return null; const s=parseInt(ss[2])-1; return ss[3]?String(v).substr(s,parseInt(ss[3])):String(v).substr(s); }
+  // ST_MakePoint(lon, lat) — construit un WKT POINT
+  const mp = expr.match(/^ST_MakePoint\s*\(([\s\S]+)\)$/i);
+  if(mp){
+    const args=splitFields(mp[1]);
+    if(args.length<2)return null;
+    const lon=evalVal(args[0].trim(),row);
+    const lat=evalVal(args[1].trim(),row);
+    if(lon===null||lat===null)return null;
+    return `POINT(${lon} ${lat})`;
+  }
+  const gt = expr.match(/^ST_GeometryType\s*\(([\s\S]+)\)$/i);
+  if(gt){ const v=evalVal(gt[1].trim(),row); if(!v)return null; const m=String(v).match(/^(?:SRID=\d+;)?(\w+)\s*[(\s]/i); return m?m[1].toUpperCase():null; }
+  // ST_SRID(geom) — extrait SRID=xxxx si présent
+  const sr = expr.match(/^ST_SRID\s*\(([\s\S]+)\)$/i);
+  if(sr){ const v=evalVal(sr[1].trim(),row); if(!v)return null; const m=String(v).match(/^SRID=(\d+)/i); return m?parseInt(m[1]):null; }
+  // ST_IsEmpty(geom)
+  const ie = expr.match(/^ST_IsEmpty\s*\(([\s\S]+)\)$/i);
+  if(ie){ const v=evalVal(ie[1].trim(),row); return(!v||String(v).trim()==='')?1:0; }
+  // ST_X / ST_Y — lon/lat d'un POINT WKT
+  const xy = expr.match(/^ST_(X|Y)\s*\(([\s\S]+)\)$/i);
+  if(xy){ const v=evalVal(xy[2].trim(),row); if(!v)return null; const wkt=String(v).replace(/^SRID=\d+;/i,''); const pm=wkt.match(/POINT\s*\(\s*([\d.\-]+)\s+([\d.\-]+)\s*\)/i); if(!pm)return null; return xy[1].toUpperCase()==='X'?parseFloat(pm[1]):parseFloat(pm[2]); }
   return undefined; // non reconnu
 }
 
@@ -621,7 +644,7 @@ const KW=[
   {cls:'kj',items:[['INNER JOIN',' INNER JOIN  ON '],['LEFT JOIN',' LEFT JOIN  ON '],['ON',' ON ']]},
   {cls:'kc',items:[['AND',' AND '],['OR',' OR '],['NOT',' NOT '],['IN',' IN (...)'],['IS NULL',' IS NULL'],['IS NOT NULL',' IS NOT NULL'],['BETWEEN',' BETWEEN  AND '],['COALESCE','COALESCE(, )'],['DATE','DATE(\'now\')'],['STRFTIME','STRFTIME(\'%Y-%m-%d\', )']]},
   {cls:'kw',items:[['INSERT INTO','INSERT INTO  VALUES (...)'],['UPDATE SET','UPDATE  SET  = \'\' WHERE '],['DELETE FROM','DELETE FROM  WHERE ']]},
-  {cls:'kd',items:[['CREATE TABLE','CREATE TABLE  (id INTEGER, nom TEXT)'],['DROP TABLE','DROP TABLE ']]}
+  {cls:'kd',items:[['CREATE TABLE','CREATE TABLE  (id INTEGER, nom TEXT)'],['DROP TABLE','DROP TABLE '],['ST_GeometryType','ST_GeometryType()'],['ST_SRID','ST_SRID()'],['ST_IsEmpty','ST_IsEmpty()'],['ST_X','ST_X()'],['ST_Y','ST_Y()'],['ST_MakePoint','ST_MakePoint(lon, lat)']]}
 ];
 
 function buildKW(){
