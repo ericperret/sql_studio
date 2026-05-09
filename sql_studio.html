@@ -1,4 +1,12 @@
 <!DOCTYPE html>
+<!--
+  sql_studio.html
+  Auteur  : Eric PERRET
+  Date    : 2026-05-08
+  Version : 1.4
+  Desc    : SQL learning tool — embedded full SQL interpreter + DB — zero dependencies
+            SELECT, JOIN, LEFT JOIN, CASE WHEN, DDL, Training mode 15 exercices
+-->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -308,11 +316,69 @@ function evalCase(expr,row){
   return elseVal;
 }
 
+// ── fonctions scalaires ───────────────────────────────────
+function evalFunc(expr, row){
+  // COALESCE(a, b, c, ...) — premier non-NULL
+  const cm = expr.match(/^COALESCE\s*\(([\s\S]+)\)$/i);
+  if(cm){
+    const args = splitFields(cm[1]);
+    for(const a of args){
+      const v = evalVal(a.trim(), row);
+      if(v !== null && v !== undefined) return v;
+    }
+    return null;
+  }
+  // DATE('now') — date du jour ISO
+  const dn = expr.match(/^DATE\s*\(\s*'now'\s*\)$/i);
+  if(dn) return new Date().toISOString().slice(0,10);
+  // DATE('now', '+N days' | '-N days')
+  const dd = expr.match(/^DATE\s*\(\s*'now'\s*,\s*'([+-]\d+)\s*days?'\s*\)$/i);
+  if(dd){ const d=new Date(); d.setDate(d.getDate()+parseInt(dd[1])); return d.toISOString().slice(0,10); }
+  // DATE(col) — extrait la partie date d'un timestamp
+  const dc = expr.match(/^DATE\s*\(([\s\S]+)\)$/i);
+  if(dc){ const v=evalVal(dc[1].trim(),row); return v?String(v).slice(0,10):null; }
+  // STRFTIME(format, col|'now')
+  const sf = expr.match(/^STRFTIME\s*\(\s*'([^']+)'\s*,\s*([\s\S]+?)\s*\)$/i);
+  if(sf){
+    const fmt=sf[1];
+    const raw=sf[2].trim().toLowerCase()==="'now'"?new Date().toISOString():String(evalVal(sf[2].trim(),row)||'');
+    const d=new Date(raw);if(isNaN(d))return null;
+    return fmt.replace('%Y',d.getFullYear())
+              .replace('%m',String(d.getMonth()+1).padStart(2,'0'))
+              .replace('%d',String(d.getDate()).padStart(2,'0'))
+              .replace('%H',String(d.getHours()).padStart(2,'0'))
+              .replace('%M',String(d.getMinutes()).padStart(2,'0'))
+              .replace('%S',String(d.getSeconds()).padStart(2,'0'));
+  }
+  // CONCAT(a, b, c, ...) — concaténation
+  const cc = expr.match(/^CONCAT\s*\(([\s\S]+)\)$/i);
+  if(cc){
+    const args = splitFields(cc[1]);
+    return args.map(a=>{ const v=evalVal(a.trim(),row); return v===null?'':String(v); }).join('');
+  }
+  if(ul){ const v=evalVal(ul[2].trim(),row); if(v===null)return null; return ul[1].toUpperCase()==='UPPER'?String(v).toUpperCase():String(v).toLowerCase(); }
+  // LENGTH
+  const ln = expr.match(/^LENGTH\s*\(([\s\S]+)\)$/i);
+  if(ln){ const v=evalVal(ln[1].trim(),row); return v===null?null:String(v).length; }
+  // SUBSTR(col, start [, len])
+  const ss = expr.match(/^SUBSTR\s*\(([\s\S]+?),\s*(\d+)(?:,\s*(\d+))?\)$/i);
+  if(ss){ const v=evalVal(ss[1].trim(),row); if(v===null)return null; const s=parseInt(ss[2])-1; return ss[3]?String(v).substr(s,parseInt(ss[3])):String(v).substr(s); }
+  return undefined; // non reconnu
+}
+
 function evalExpr(expr,row){
   let s=expr.trim(),n=0;
   while(/\bCASE\b/i.test(s)&&n++<20)s=s.replace(/\bCASE\b[\s\S]*?\bEND\b/i,m=>evalCase(m,row));
   s=s.trim();
+  // fonctions scalaires
+  const fv = evalFunc(s, row);
+  if(fv !== undefined) return fv;
   if(s.startsWith('(')&&s.endsWith(')'))s=s.slice(1,-1).trim();
+  // opérateur || concaténation
+  if(s.includes('||')){
+    const parts2=s.split('||');
+    return parts2.map(p=>{ const v=evalVal(p.trim(),row); return v===null?'':String(v); }).join('');
+  }
   const parts=splitPlus(s);
   if(parts.length>1)return parts.reduce((acc,p)=>acc+(Number(evalVal(p.trim(),row))||0),0);
   return evalVal(s,row);
@@ -551,9 +617,9 @@ function updateStats(){
 
 // ── keywords ─────────────────────────────────────────────
 const KW=[
-  {cls:'kr',items:[['SELECT','SELECT '],['DISTINCT','DISTINCT '],['FROM',' FROM '],['WHERE',' WHERE '],['ORDER BY',' ORDER BY '],['ASC',' ASC'],['DESC',' DESC'],['LIMIT',' LIMIT ']]},
+  {cls:'kr',items:[['SELECT','SELECT '],['DISTINCT','DISTINCT '],['FROM',' FROM '],['WHERE',' WHERE '],['ORDER BY',' ORDER BY '],['ASC',' ASC'],['DESC',' DESC'],['LIMIT',' LIMIT '],['CONCAT','CONCAT(, )']]},
   {cls:'kj',items:[['INNER JOIN',' INNER JOIN  ON '],['LEFT JOIN',' LEFT JOIN  ON '],['ON',' ON ']]},
-  {cls:'kc',items:[['AND',' AND '],['OR',' OR '],['NOT',' NOT '],['IN',' IN (...)'],['IS NULL',' IS NULL'],['IS NOT NULL',' IS NOT NULL'],['BETWEEN',' BETWEEN  AND ']]},
+  {cls:'kc',items:[['AND',' AND '],['OR',' OR '],['NOT',' NOT '],['IN',' IN (...)'],['IS NULL',' IS NULL'],['IS NOT NULL',' IS NOT NULL'],['BETWEEN',' BETWEEN  AND '],['COALESCE','COALESCE(, )'],['DATE','DATE(\'now\')'],['STRFTIME','STRFTIME(\'%Y-%m-%d\', )']]},
   {cls:'kw',items:[['INSERT INTO','INSERT INTO  VALUES (...)'],['UPDATE SET','UPDATE  SET  = \'\' WHERE '],['DELETE FROM','DELETE FROM  WHERE ']]},
   {cls:'kd',items:[['CREATE TABLE','CREATE TABLE  (id INTEGER, nom TEXT)'],['DROP TABLE','DROP TABLE ']]}
 ];
@@ -584,23 +650,73 @@ function exportCSV(){
   a.download='export.csv';a.click();
 }
 
+// Mapping types PostgreSQL/SQL → SQLite
+function mapType(raw){
+  const t=(raw||'').toLowerCase().trim();
+  if(/^int|^serial|^bigint|^smallint/.test(t))        return 'INTEGER';
+  if(/^bool/.test(t))                                  return 'INTEGER';
+  if(/^real|^float|^double|^numeric|^decimal/.test(t)) return 'REAL';
+  return 'TEXT'; // varchar, character, text, date, timestamp, interval...
+}
+
 function handleCSV(input){
   const file=input.files[0];if(!file)return;
-  const tname=file.name.replace(/\.csv$/i,'').replace(/[^a-zA-Z0-9_]/g,'_').toLowerCase();
   const reader=new FileReader();
   reader.onload=e=>{
-    const lines=e.target.result.split('\n').filter(l=>l.trim());
+    // normalise CRLF
+    const raw=e.target.result.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+    const lines=raw.split('\n').filter(l=>l.trim());
     if(lines.length<2){alert('CSV trop court');return}
-    const cols=lines[0].split(',').map(c=>c.trim().replace(/"/g,'').toLowerCase());
-    const colDefs=cols.map(c=>({name:c,type:'TEXT'}));
+
+    const headers=parseCSVLine(lines[0]).map(c=>c.trim().replace(/"/g,'').toLowerCase());
+
+    // ── Détection format schéma : table_name / column_name / data_type ──
+    const isSchema = headers.includes('table_name')
+                  && headers.includes('column_name')
+                  && headers.includes('data_type');
+
+    if(isSchema){
+      const iT=headers.indexOf('table_name');
+      const iC=headers.indexOf('column_name');
+      const iD=headers.indexOf('data_type');
+      // grouper par table
+      const schema={};
+      lines.slice(1).forEach(line=>{
+        const vals=parseCSVLine(line);
+        const tbl=(vals[iT]||'').trim().toLowerCase();
+        const col=(vals[iC]||'').trim().toLowerCase();
+        const typ=(vals[iD]||'').trim();
+        if(!tbl||!col)return;
+        if(!schema[tbl])schema[tbl]=[];
+        schema[tbl].push({name:col,type:mapType(typ),raw:typ});
+      });
+      // purge + création
+      const names=Object.keys(schema);
+      names.forEach(t=>{ if(DB[t])delete DB[t]; });
+      names.forEach(t=>{ DB[t]={cols:schema[t],rows:[]}; });
+      saveDB();renderTables();
+      document.getElementById('out').innerHTML=
+        `<div class="mok">Schéma importé — ${names.length} table(s) créée(s) :<br>${names.join(', ')}</div>`;
+      return;
+    }
+
+    // ── Import CSV données classique ──
+    const tname=file.name.replace(/\.csv$/i,'').replace(/[^a-zA-Z0-9_]/g,'_').toLowerCase();
+    const colDefs=headers.map(c=>({name:c,type:'TEXT'}));
     const rows=lines.slice(1).map(line=>{
       const vals=parseCSVLine(line);const row={};
-      cols.forEach((c,i)=>{const v=vals[i]===undefined?null:vals[i].trim();row[c]=v===''?null:(!isNaN(v)&&v!==''?Number(v):v)});
+      headers.forEach((c,i)=>{
+        const v=vals[i]===undefined?null:vals[i].trim().replace(/^"|"$/g,'');
+        row[c]=v===''?null:(!isNaN(v)&&v!==''?Number(v):v);
+      });
       return row;
     });
-    const fn=DB[tname]?tname+'_'+Date.now():tname;
-    DB[fn]={cols:colDefs,rows};saveDB();renderTables();
-    document.getElementById('out').innerHTML=`<div class="mok">Table '${fn}' importée — ${rows.length} lignes</div>`;
+    // purge si même nom, sinon suffixe
+    if(DB[tname]) delete DB[tname];
+    DB[tname]={cols:colDefs,rows};
+    saveDB();renderTables();
+    document.getElementById('out').innerHTML=
+      `<div class="mok">Table '${tname}' importée — ${rows.length} ligne(s)</div>`;
   };
   reader.readAsText(file);input.value='';
 }
